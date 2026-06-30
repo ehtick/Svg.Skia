@@ -67,14 +67,14 @@ public class Issue462Tests : SvgUnitTest
 
     private static void AssertUsesSyntheticBold(SkiaModel model, SKTypeface typeface)
     {
-        using var localPaint = model.ToSKPaint(new SKPaint
+        using var localFont = model.ToSKFont(new SKPaint
         {
             TextSize = 48f,
             Typeface = typeface
         });
 
-        Assert.NotNull(localPaint);
-        Assert.True(localPaint!.FakeBoldText);
+        Assert.NotNull(localFont);
+        Assert.True(localFont!.Embolden);
     }
 
     private sealed class RegularOnlyTypefaceProvider : ITypefaceProvider, IDisposable

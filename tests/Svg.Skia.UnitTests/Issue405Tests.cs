@@ -49,14 +49,14 @@ public class Issue405Tests
                 SKFontStyleSlant.Upright)
         };
 
-        using var localPaint = model.ToSKPaint(paint);
-        Assert.NotNull(localPaint);
+        using var localFont = model.ToSKFont(paint);
+        Assert.NotNull(localFont);
 
         var desiredWeight = (int)SkiaSharp.SKFontStyleWeight.ExtraBlack;
-        var actualWeight = localPaint!.Typeface?.FontWeight ?? 0;
+        var actualWeight = localFont!.Typeface?.FontWeight ?? 0;
         var shouldFakeBold = actualWeight < desiredWeight;
 
-        Assert.Equal(shouldFakeBold, localPaint.FakeBoldText);
+        Assert.Equal(shouldFakeBold, localFont.Embolden);
     }
 
     [Theory]

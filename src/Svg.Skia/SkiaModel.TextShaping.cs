@@ -31,7 +31,6 @@ public partial class SkiaModel
             bool fakeBoldText,
             bool lcdRenderText,
             bool subpixelText,
-            SkiaSharp.SKTextEncoding textEncoding,
             string? fontFeatureSettings,
             string? fontKerning,
             string? fontVariantLigatures,
@@ -48,7 +47,6 @@ public partial class SkiaModel
             FakeBoldText = fakeBoldText;
             LcdRenderText = lcdRenderText;
             SubpixelText = subpixelText;
-            TextEncoding = textEncoding;
             FontFeatureSettings = fontFeatureSettings;
             FontKerning = fontKerning;
             FontVariantLigatures = fontVariantLigatures;
@@ -66,7 +64,6 @@ public partial class SkiaModel
         private bool FakeBoldText { get; }
         private bool LcdRenderText { get; }
         private bool SubpixelText { get; }
-        private SkiaSharp.SKTextEncoding TextEncoding { get; }
         private string? FontFeatureSettings { get; }
         private string? FontKerning { get; }
         private string? FontVariantLigatures { get; }
@@ -85,7 +82,6 @@ public partial class SkiaModel
                    FakeBoldText == other.FakeBoldText &&
                    LcdRenderText == other.LcdRenderText &&
                    SubpixelText == other.SubpixelText &&
-                   TextEncoding == other.TextEncoding &&
                    string.Equals(FontFeatureSettings, other.FontFeatureSettings, StringComparison.Ordinal) &&
                    string.Equals(FontKerning, other.FontKerning, StringComparison.Ordinal) &&
                    string.Equals(FontVariantLigatures, other.FontVariantLigatures, StringComparison.Ordinal) &&
@@ -112,7 +108,6 @@ public partial class SkiaModel
                 hash = (hash * 397) ^ (FakeBoldText ? 1 : 0);
                 hash = (hash * 397) ^ (LcdRenderText ? 1 : 0);
                 hash = (hash * 397) ^ (SubpixelText ? 1 : 0);
-                hash = (hash * 397) ^ (int)TextEncoding;
                 hash = (hash * 397) ^ (FontFeatureSettings is null ? 0 : StringComparer.Ordinal.GetHashCode(FontFeatureSettings));
                 hash = (hash * 397) ^ (FontKerning is null ? 0 : StringComparer.Ordinal.GetHashCode(FontKerning));
                 hash = (hash * 397) ^ (FontVariantLigatures is null ? 0 : StringComparer.Ordinal.GetHashCode(FontVariantLigatures));
@@ -126,25 +121,25 @@ public partial class SkiaModel
         }
     }
 
-    internal float GetTextAdvance(string text, SkiaSharp.SKPaint paint)
+    internal float GetTextAdvance(string text, SkiaSharp.SKFont font)
     {
-        return GetTextAdvance(text, paint, fontFeatureSettings: null, fontKerning: null, fontVariantLigatures: null);
+        return GetTextAdvance(text, font, fontFeatureSettings: null, fontKerning: null, fontVariantLigatures: null);
     }
 
     internal float GetTextAdvance(
         string text,
-        SkiaSharp.SKPaint paint,
+        SkiaSharp.SKFont font,
         string? fontFeatureSettings,
         string? fontKerning,
         string? fontVariantLigatures)
     {
-        var cacheKey = CreateTextAdvanceCacheKey(text, paint, fontFeatureSettings, fontKerning, fontVariantLigatures);
+        var cacheKey = CreateTextAdvanceCacheKey(text, font, fontFeatureSettings, fontKerning, fontVariantLigatures);
         if (s_textAdvanceCache.TryGetValue(cacheKey, out var cachedAdvance))
         {
             return cachedAdvance;
         }
 
-        var advance = GetTextAdvanceUncached(text, paint, fontFeatureSettings, fontKerning, fontVariantLigatures);
+        var advance = GetTextAdvanceUncached(text, font, fontFeatureSettings, fontKerning, fontVariantLigatures);
         s_textAdvanceCache.TryAdd(cacheKey, advance);
         TrimTextAdvanceCacheIfNeeded();
         return advance;
@@ -152,49 +147,48 @@ public partial class SkiaModel
 
     private float GetTextAdvanceUncached(
         string text,
-        SkiaSharp.SKPaint paint,
+        SkiaSharp.SKFont font,
         string? fontFeatureSettings,
         string? fontKerning,
         string? fontVariantLigatures)
     {
-        if (TryCreateStableMeasurePaint(paint, out var stablePaint, out var scaleDown))
+        if (TryCreateStableMeasureFont(font, out var stableFont, out var scaleDown))
         {
-            using (stablePaint)
+            using (stableFont)
             {
-                if (TryShapeText(text, 0f, 0f, stablePaint, null, fontFeatureSettings, fontKerning, fontVariantLigatures, out var stableResult))
+                if (TryShapeText(text, 0f, 0f, stableFont, null, fontFeatureSettings, fontKerning, fontVariantLigatures, out var stableResult))
                 {
                     return stableResult.Width * scaleDown;
                 }
 
-                return stablePaint.MeasureText(text) * scaleDown;
+                return stableFont.MeasureText(text) * scaleDown;
             }
         }
 
-        if (TryShapeText(text, 0f, 0f, paint, null, fontFeatureSettings, fontKerning, fontVariantLigatures, out var result))
+        if (TryShapeText(text, 0f, 0f, font, null, fontFeatureSettings, fontKerning, fontVariantLigatures, out var result))
         {
             return result.Width;
         }
 
-        return paint.MeasureText(text);
+        return font.MeasureText(text);
     }
 
     private static TextAdvanceCacheKey CreateTextAdvanceCacheKey(
         string text,
-        SkiaSharp.SKPaint paint,
+        SkiaSharp.SKFont font,
         string? fontFeatureSettings,
         string? fontKerning,
         string? fontVariantLigatures)
     {
-        var typeface = paint.Typeface;
+        var typeface = font.Typeface;
         return new TextAdvanceCacheKey(
             text,
-            paint.TextSize,
-            paint.TextScaleX,
-            paint.TextSkewX,
-            paint.FakeBoldText,
-            paint.LcdRenderText,
-            paint.SubpixelText,
-            paint.TextEncoding,
+            font.Size,
+            font.ScaleX,
+            font.SkewX,
+            font.Embolden,
+            font.Edging == SkiaSharp.SKFontEdging.SubpixelAntialias,
+            font.Subpixel,
             fontFeatureSettings,
             fontKerning,
             fontVariantLigatures,
@@ -213,22 +207,26 @@ public partial class SkiaModel
         }
     }
 
-    private static bool TryCreateStableMeasurePaint(
-        SkiaSharp.SKPaint paint,
-        out SkiaSharp.SKPaint stablePaint,
+    private static bool TryCreateStableMeasureFont(
+        SkiaSharp.SKFont font,
+        out SkiaSharp.SKFont stableFont,
         out float scaleDown)
     {
-        stablePaint = null!;
+        stableFont = null!;
         scaleDown = 1f;
-        if (paint.TextSize <= 0f || paint.TextSize >= MinimumStableTextMeasureSize)
+        if (font.Size <= 0f || font.Size >= MinimumStableTextMeasureSize)
         {
             return false;
         }
 
-        var scaleUp = MinimumStableTextMeasureSize / paint.TextSize;
+        var scaleUp = MinimumStableTextMeasureSize / font.Size;
         scaleDown = 1f / scaleUp;
-        stablePaint = paint.Clone();
-        stablePaint.TextSize = MinimumStableTextMeasureSize;
+        stableFont = new SkiaSharp.SKFont(font.Typeface, MinimumStableTextMeasureSize, font.ScaleX, font.SkewX)
+        {
+            Edging = font.Edging,
+            Subpixel = font.Subpixel,
+            Embolden = font.Embolden
+        };
         return true;
     }
 
@@ -245,8 +243,8 @@ public partial class SkiaModel
             return false;
         }
 
-        using var skPaint = ToSKTextPaint(paint);
-        if (skPaint is null || !TryShapeText(text!, 0f, 0f, skPaint, rightToLeft, paint.FontFeatureSettings, paint.FontKerning, paint.FontVariantLigatures, out var result))
+        using var skFont = ToSKFont(paint);
+        if (skFont is null || !TryShapeText(text!, 0f, 0f, skFont, rightToLeft, paint.FontFeatureSettings, paint.FontKerning, paint.FontVariantLigatures, out var result))
         {
             return false;
         }
@@ -346,13 +344,7 @@ public partial class SkiaModel
             return false;
         }
 
-        using var skPaint = ToSKTextPaint(paint);
-        if (skPaint is null)
-        {
-            return false;
-        }
-
-        using var font = skPaint.ToFont();
+        using var font = ToSKFont(paint);
         if (font is null || font.Typeface is null)
         {
             return false;
@@ -380,54 +372,6 @@ public partial class SkiaModel
 
         path = FromSKPath(combinedPath);
         return !path.IsEmpty;
-    }
-
-    private bool TryShapeText(
-        string text,
-        float x,
-        float y,
-        SkiaSharp.SKPaint paint,
-        bool? rightToLeft,
-        out ShapedTextResult result)
-    {
-        return TryShapeText(
-            text,
-            x,
-            y,
-            paint,
-            rightToLeft,
-            fontFeatureSettings: null,
-            fontKerning: null,
-            fontVariantLigatures: null,
-            out result);
-    }
-
-    private bool TryShapeText(
-        string text,
-        float x,
-        float y,
-        SkiaSharp.SKPaint paint,
-        bool? rightToLeft,
-        string? fontFeatureSettings,
-        string? fontKerning,
-        string? fontVariantLigatures,
-        out ShapedTextResult result)
-    {
-        if (string.IsNullOrEmpty(text) ||
-            paint.Typeface is null)
-        {
-            result = default;
-            return false;
-        }
-
-        using var font = paint.ToFont();
-        if (font is null || font.Typeface is null)
-        {
-            result = default;
-            return false;
-        }
-
-        return TryShapeText(text, x, y, font, rightToLeft, fontFeatureSettings, fontKerning, fontVariantLigatures, out result);
     }
 
     private static bool TryShapeText(

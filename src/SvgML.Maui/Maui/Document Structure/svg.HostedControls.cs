@@ -3,7 +3,6 @@ using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
 using SkiaSharp.Views.Maui.Controls;
 using SkiaFont = SkiaSharp.SKFont;
-using SkiaPaint = SkiaSharp.SKPaint;
 using SkiaTypeface = SkiaSharp.SKTypeface;
 
 namespace SvgML;
@@ -412,12 +411,10 @@ public partial class svg
 
         try
         {
-            using var paint = new SkiaPaint
-            {
-                Typeface = typeface,
-                TextSize = (float)ResolveFontSize(styleSource)
-            };
-            return paint.MeasureText(text);
+            using var font = typeface is null
+                ? new SkiaFont { Size = (float)ResolveFontSize(styleSource) }
+                : new SkiaFont(typeface, (float)ResolveFontSize(styleSource));
+            return font.MeasureText(text);
         }
         finally
         {

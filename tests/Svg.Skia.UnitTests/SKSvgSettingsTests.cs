@@ -304,54 +304,6 @@ public class SKSvgSettingsTests : SvgUnitTest
     }
 
     [Fact]
-    public void ToSKPaint_WithoutTypeface_DoesNotResolveDefaultTypeface()
-    {
-        var model = new SkiaModel(new SKSvgSettings());
-
-        using var paint = model.ToSKPaint(new ShimPaint());
-
-        Assert.NotNull(paint);
-#pragma warning disable CS0618 // SKPaint.Typeface is verified here to avoid loading the default platform typeface.
-        Assert.Null(paint!.Typeface);
-#pragma warning restore CS0618
-    }
-
-    [Fact]
-    public void ToSKPaint_WithImplicitTypeface_DoesNotResolveDefaultTypeface()
-    {
-        var model = new SkiaModel(new SKSvgSettings());
-        var source = new ShimPaint
-        {
-            Typeface = CreateImplicitTypeface()
-        };
-
-        using var paint = model.ToSKPaint(source);
-
-        Assert.NotNull(paint);
-#pragma warning disable CS0618 // SKPaint.Typeface is verified here to avoid loading the default platform typeface.
-        Assert.Null(paint!.Typeface);
-#pragma warning restore CS0618
-    }
-
-    [Fact]
-    public void ToSKPaint_WithImplicitBoldTypeface_EmboldensWithoutResolvingDefaultTypeface()
-    {
-        var model = new SkiaModel(new SKSvgSettings());
-        var source = new ShimPaint
-        {
-            Typeface = CreateImplicitTypeface(fontWeight: ShimSkiaSharp.SKFontStyleWeight.Bold)
-        };
-
-        using var paint = model.ToSKPaint(source);
-
-        Assert.NotNull(paint);
-#pragma warning disable CS0618 // SKPaint.Typeface and FakeBoldText are verified here to avoid loading the default platform typeface.
-        Assert.Null(paint!.Typeface);
-        Assert.True(paint.FakeBoldText);
-#pragma warning restore CS0618
-    }
-
-    [Fact]
     public void ToSKFont_WithoutTypeface_ResolvesDefaultTypefaceForText()
     {
         var model = new SkiaModel(new SKSvgSettings());
@@ -524,59 +476,6 @@ public class SKSvgSettingsTests : SvgUnitTest
         Assert.NotNull(expectedTypeface);
         Assert.NotNull(runTypeface);
         Assert.Equal((ShimSkiaSharp.SKFontStyleWidth)expectedTypeface!.FontWidth, runTypeface!.FontWidth);
-    }
-
-    [Fact]
-    public void GetRenderPaint_WithoutTypeface_DoesNotResolveDefaultTypeface()
-    {
-        var model = new SkiaModel(new SKSvgSettings());
-        var method = typeof(SkiaModel).GetMethod(
-            "GetRenderPaint",
-            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-
-        using var paint = Assert.IsType<SKPaint>(method!.Invoke(model, new object?[] { new ShimPaint() }));
-
-#pragma warning disable CS0618 // SKPaint.Typeface is verified here to avoid loading the default platform typeface.
-        Assert.Null(paint.Typeface);
-#pragma warning restore CS0618
-    }
-
-    [Fact]
-    public void GetRenderPaint_WithImplicitTypeface_DoesNotResolveDefaultTypeface()
-    {
-        var model = new SkiaModel(new SKSvgSettings());
-        var method = typeof(SkiaModel).GetMethod(
-            "GetRenderPaint",
-            BindingFlags.Instance | BindingFlags.NonPublic);
-        var source = new ShimPaint
-        {
-            Typeface = CreateImplicitTypeface()
-        };
-
-        using var paint = Assert.IsType<SKPaint>(method!.Invoke(model, new object?[] { source }));
-
-#pragma warning disable CS0618 // SKPaint.Typeface is verified here to avoid loading the default platform typeface.
-        Assert.Null(paint.Typeface);
-#pragma warning restore CS0618
-    }
-
-    [Fact]
-    public void ToWireframePaint_WithImplicitTypeface_DoesNotResolveDefaultTypeface()
-    {
-        var model = new SkiaModel(new SKSvgSettings());
-        var method = typeof(SkiaModel).GetMethod(
-            "ToWireframePaint",
-            BindingFlags.Instance | BindingFlags.NonPublic);
-        var source = new ShimPaint
-        {
-            Typeface = CreateImplicitTypeface()
-        };
-
-        using var paint = Assert.IsType<SKPaint>(method!.Invoke(model, new object?[] { source }));
-
-#pragma warning disable CS0618 // SKPaint.Typeface is verified here to avoid loading the default platform typeface.
-        Assert.Null(paint.Typeface);
-#pragma warning restore CS0618
     }
 
     private static ShimSkiaSharp.SKTypeface CreateImplicitTypeface(

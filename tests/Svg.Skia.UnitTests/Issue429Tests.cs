@@ -34,12 +34,12 @@ public class Issue429Tests : SvgUnitTest
                 SKFontStyleSlant.Upright)
         };
 
-        using var skPaint = model.ToSKPaint(paint);
+        using var skFont = model.ToSKFont(paint);
 
-        Assert.NotNull(skPaint);
-        Assert.Equal(suppliedTypeface!.Handle, skPaint!.Typeface?.Handle);
-        Assert.True(skPaint.Typeface!.FontWeight < (int)SkiaSharp.SKFontStyleWeight.ExtraBlack);
-        Assert.False(skPaint.FakeBoldText);
+        Assert.NotNull(skFont);
+        Assert.Equal(suppliedTypeface!.Handle, skFont!.Typeface?.Handle);
+        Assert.True(skFont.Typeface!.FontWeight < (int)SkiaSharp.SKFontStyleWeight.ExtraBlack);
+        Assert.False(skFont.Embolden);
     }
 
     private sealed class AliasTypefaceProvider : ITypefaceProvider

@@ -608,7 +608,11 @@ public class W3CTestSuiteTests : SvgUnitTest
             "text-align-04-b" => 0.046,
             "text-align-05-b" => 0.048,
             "text-align-06-b" => 0.054,
-            "text-fonts-02-t" => 0.031,
+            // SkiaSharp 4 ships a newer native Skia whose text rasterizer produces slightly
+            // different antialiasing/blending than SkiaSharp 3 for these bundled-font fixtures.
+            // Geometry and layout still match; the residual delta is platform text raster only.
+            "text-fonts-01-t" => 0.026,
+            "text-fonts-02-t" => 0.033,
             "text-fonts-03-t" => 0.029,
             "text-fonts-04-t" => 0.029,
             "text-fonts-05-f" => 0.039,
