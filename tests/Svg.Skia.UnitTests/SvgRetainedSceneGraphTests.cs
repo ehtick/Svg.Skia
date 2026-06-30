@@ -2185,9 +2185,15 @@ public class SvgRetainedSceneGraphTests : SvgUnitTest
         Assert.NotNull(retainedModel);
 
         var latin = Assert.Single(retainedModel!.FindCommandsBySourceElementId<DrawTextCanvasCommand>("latin"));
-        var cjk = Assert.Single(retainedModel.FindCommandsBySourceElementId<DrawTextCanvasCommand>("cjk"));
 
-        Assert.True(cjk.Y < latin.Y, $"Expected use-script CJK text to select an ideographic baseline above alphabetic, but was {cjk.Y} vs {latin.Y}.");
+        // CJK text may split into multiple typeface runs depending on platform font fallback
+        // (for example, Linux CI runners lack a single font covering both glyphs). Every run shares
+        // the element baseline, so assert the use-script ideographic baseline selection on each run
+        // rather than requiring the text to resolve to exactly one typeface run.
+        var cjkCommands = retainedModel.FindCommandsBySourceElementId<DrawTextCanvasCommand>("cjk").ToList();
+        Assert.NotEmpty(cjkCommands);
+        Assert.All(cjkCommands, cjk =>
+            Assert.True(cjk.Y < latin.Y, $"Expected use-script CJK text to select an ideographic baseline above alphabetic, but was {cjk.Y} vs {latin.Y}."));
     }
 
     [Fact]
