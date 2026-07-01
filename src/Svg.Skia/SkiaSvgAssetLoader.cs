@@ -334,20 +334,33 @@ public partial class SkiaSvgAssetLoader : Model.ISvgAssetLoader, Model.ISvgImage
         }
 
         using var skFont = _skiaModel.ToSKFont(paint);
-        using var skPaint = _skiaModel.ToSKTextPaint(paint);
         var skBounds = default(SkiaSharp.SKRect);
-        if (skPaint is null)
+        if (RequiresPaintForTextMeasureBounds(paint))
         {
-            skFont.MeasureText(text, out skBounds);
+            using var skPaint = _skiaModel.ToSKTextPaint(paint);
+            if (skPaint is null)
+            {
+                skFont.MeasureText(text, out skBounds);
+            }
+            else
+            {
+                skFont.MeasureText(text, out skBounds, skPaint);
+            }
         }
         else
         {
-            skFont.MeasureText(text, out skBounds, skPaint);
+            skFont.MeasureText(text, out skBounds);
         }
 
         var width = _skiaModel.GetTextAdvance(text, skFont, paint.FontFeatureSettings, paint.FontKerning, paint.FontVariantLigatures);
         bounds = new ShimSkiaSharp.SKRect(skBounds.Left, skBounds.Top, skBounds.Right, skBounds.Bottom);
         return width;
+    }
+
+    private static bool RequiresPaintForTextMeasureBounds(ShimSkiaSharp.SKPaint paint)
+    {
+        return paint.Style != ShimSkiaSharp.SKPaintStyle.Fill ||
+               paint.PathEffect is not null;
     }
 
     /// <inheritdoc />
