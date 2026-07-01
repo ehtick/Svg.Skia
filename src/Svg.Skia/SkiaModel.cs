@@ -655,8 +655,7 @@ public partial class SkiaModel
         SkiaSharp.SKTypeface resolved,
         SkiaSharp.SKFontStyle style)
     {
-        var mismatch = StyleMismatchCount(resolved, style);
-        if (mismatch == 0)
+        if (IsExactStyleMatch(resolved, style))
         {
             return resolved;
         }
@@ -669,7 +668,7 @@ public partial class SkiaModel
 
         var restyled = SkiaSharp.SKTypeface.FromFamilyName(familyName, style);
         if (restyled is { } && restyled.Handle != IntPtr.Zero &&
-            StyleMismatchCount(restyled, style) < mismatch)
+            IsBetterStyleMatch(restyled, resolved, style))
         {
             resolved.Dispose();
             return restyled;
@@ -679,25 +678,55 @@ public partial class SkiaModel
         return resolved;
     }
 
-    private static int StyleMismatchCount(SkiaSharp.SKTypeface typeface, SkiaSharp.SKFontStyle style)
+    private static bool IsExactStyleMatch(SkiaSharp.SKTypeface typeface, SkiaSharp.SKFontStyle style)
     {
-        var mismatch = 0;
-        if (typeface.FontSlant != style.Slant)
+        return typeface.FontSlant == style.Slant &&
+               typeface.FontWeight == style.Weight &&
+               typeface.FontWidth == style.Width;
+    }
+
+    private static bool IsBetterStyleMatch(
+        SkiaSharp.SKTypeface candidate,
+        SkiaSharp.SKTypeface current,
+        SkiaSharp.SKFontStyle requested)
+    {
+        return CompareStyleMatch(
+            candidate.FontWeight,
+            candidate.FontWidth,
+            candidate.FontSlant,
+            current.FontWeight,
+            current.FontWidth,
+            current.FontSlant,
+            requested) < 0;
+    }
+
+    private static int CompareStyleMatch(
+        int candidateWeight,
+        int candidateWidth,
+        SkiaSharp.SKFontStyleSlant candidateSlant,
+        int currentWeight,
+        int currentWidth,
+        SkiaSharp.SKFontStyleSlant currentSlant,
+        SkiaSharp.SKFontStyle requested)
+    {
+        var compare = SlantMismatch(candidateSlant, requested).CompareTo(SlantMismatch(currentSlant, requested));
+        if (compare != 0)
         {
-            mismatch++;
+            return compare;
         }
 
-        if (typeface.FontWeight != style.Weight)
+        compare = Math.Abs(candidateWeight - requested.Weight).CompareTo(Math.Abs(currentWeight - requested.Weight));
+        if (compare != 0)
         {
-            mismatch++;
+            return compare;
         }
 
-        if (typeface.FontWidth != style.Width)
-        {
-            mismatch++;
-        }
+        return Math.Abs(candidateWidth - requested.Width).CompareTo(Math.Abs(currentWidth - requested.Width));
+    }
 
-        return mismatch;
+    private static int SlantMismatch(SkiaSharp.SKFontStyleSlant slant, SkiaSharp.SKFontStyle requested)
+    {
+        return slant == requested.Slant ? 0 : 1;
     }
 
     private static bool IsAcceptableResolvedFamily(string candidate, SkiaSharp.SKTypeface resolved)
