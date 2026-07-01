@@ -334,7 +334,17 @@ public partial class SkiaSvgAssetLoader : Model.ISvgAssetLoader, Model.ISvgImage
         }
 
         using var skFont = _skiaModel.ToSKFont(paint);
-        skFont.MeasureText(text, out var skBounds);
+        using var skPaint = _skiaModel.ToSKTextPaint(paint);
+        var skBounds = default(SkiaSharp.SKRect);
+        if (skPaint is null)
+        {
+            skFont.MeasureText(text, out skBounds);
+        }
+        else
+        {
+            skFont.MeasureText(text, out skBounds, skPaint);
+        }
+
         var width = _skiaModel.GetTextAdvance(text, skFont, paint.FontFeatureSettings, paint.FontKerning, paint.FontVariantLigatures);
         bounds = new ShimSkiaSharp.SKRect(skBounds.Left, skBounds.Top, skBounds.Right, skBounds.Bottom);
         return width;

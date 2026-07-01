@@ -60,6 +60,27 @@ public class SkiaSvgAssetLoaderCachingTests
     }
 
     [Fact]
+    public void MeasureText_IncludesStrokeExpansionInBounds()
+    {
+        var assetLoader = new SkiaSvgAssetLoader(new SkiaModel(new SKSvgSettings()));
+        var fillPaint = CreateTextPaint(48f);
+        var strokePaint = CreateTextPaint(48f);
+        strokePaint.Style = SKPaintStyle.Stroke;
+        strokePaint.StrokeWidth = 18f;
+
+        var fillBounds = default(SKRect);
+        var fillAdvance = assetLoader.MeasureText("Stroke", fillPaint, ref fillBounds);
+        var strokeBounds = default(SKRect);
+        var strokeAdvance = assetLoader.MeasureText("Stroke", strokePaint, ref strokeBounds);
+
+        Assert.Equal(fillAdvance, strokeAdvance, 3);
+        Assert.True(strokeBounds.Left < fillBounds.Left);
+        Assert.True(strokeBounds.Top < fillBounds.Top);
+        Assert.True(strokeBounds.Right > fillBounds.Right);
+        Assert.True(strokeBounds.Bottom > fillBounds.Bottom);
+    }
+
+    [Fact]
     public void FindTypefaces_ReturnsIndependentResultsAndRecomputesAfterPaintMutation()
     {
         var assetLoader = new SkiaSvgAssetLoader(new SkiaModel(new SKSvgSettings()));
