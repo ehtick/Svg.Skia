@@ -156,26 +156,26 @@ public class SkiaSvgAssetLoaderCachingTests
     [Fact]
     public void FindRunTypeface_DoesNotReturnCandidateTypefaceMissingAnyRequestedGlyph()
     {
-        const string blockyFamily = "SvgSkiaRunBlocky";
+        const string partialFamily = "SvgSkiaRunPartial";
         const string latinFamily = "SvgSkiaRunLatin";
-        using var blockyTypeface = OpenNativeTypeface(GetW3CResourcePath("Blocky.woff"));
+        using var partialTypeface = OpenNativeTypeface(GetResvgFontPath("CFF-and-SBIX.otf"));
         using var latinTypeface = OpenNativeTypeface(GetResvgFontPath("NotoSans-Regular.ttf"));
-        AssertGlyphCoverage(blockyTypeface, 'G', expected: true);
-        AssertGlyphCoverage(blockyTypeface, 'A', expected: false);
-        AssertGlyphCoverage(latinTypeface, 'G', expected: true);
+        AssertGlyphCoverage(partialTypeface, 'A', expected: true);
+        AssertGlyphCoverage(partialTypeface, 'G', expected: false);
         AssertGlyphCoverage(latinTypeface, 'A', expected: true);
-        var blockyProvider = new CountingTypefaceProvider(blockyTypeface, blockyFamily);
+        AssertGlyphCoverage(latinTypeface, 'G', expected: true);
+        var partialProvider = new CountingTypefaceProvider(partialTypeface, partialFamily);
         var latinProvider = new CountingTypefaceProvider(latinTypeface, latinFamily);
         var assetLoader = new SkiaSvgAssetLoader(new SkiaModel(new SKSvgSettings
         {
-            TypefaceProviders = new List<ITypefaceProvider> { blockyProvider, latinProvider }
+            TypefaceProviders = new List<ITypefaceProvider> { partialProvider, latinProvider }
         }));
 
-        var runTypeface = FindRunTypeface(assetLoader, $"{blockyFamily}, {latinFamily}", "GA");
+        var runTypeface = FindRunTypeface(assetLoader, $"{partialFamily}, {latinFamily}", "AG");
 
         Assert.NotNull(runTypeface);
-        Assert.NotEqual(blockyFamily, runTypeface!.FamilyName);
-        Assert.True(blockyProvider.CallCount > 0);
+        Assert.NotEqual(partialFamily, runTypeface!.FamilyName);
+        Assert.True(partialProvider.CallCount > 0);
         Assert.True(latinProvider.CallCount > 0);
     }
 
