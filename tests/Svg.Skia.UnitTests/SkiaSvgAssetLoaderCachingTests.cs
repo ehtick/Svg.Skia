@@ -762,8 +762,12 @@ public class SkiaSvgAssetLoaderCachingTests
 
     private static NativeTypeface OpenNativeTypeface(string path)
     {
-        var typeface = NativeTypeface.FromFile(path);
-        Assert.NotNull(typeface);
+        var fullPath = Path.GetFullPath(path);
+        Assert.True(File.Exists(fullPath), $"Font asset not found: {fullPath}");
+
+        using var stream = File.OpenRead(fullPath);
+        var typeface = NativeTypeface.FromStream(stream);
+        Assert.True(typeface is not null, $"Font asset could not be decoded: {fullPath}");
         return typeface!;
     }
 
