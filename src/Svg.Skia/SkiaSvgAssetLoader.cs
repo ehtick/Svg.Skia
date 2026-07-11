@@ -111,9 +111,10 @@ public partial class SkiaSvgAssetLoader : Model.ISvgAssetLoader, Model.ISvgImage
         var slant = _skiaModel.ToSKFontStyleSlant(preferredTypeface?.FontSlant ?? ShimSkiaSharp.SKFontStyleSlant.Upright);
         var preferredFamily = GetExplicitFamilyName(preferredTypeface) ??
                               (preferredTypeface is null ? null : runningFont.Typeface?.FamilyName);
+        var language = paintPreferredTypeface.FontLanguage;
         SkiaSharp.SKTypeface? MatchCharacterForSpan(int codepoint, out string? familyOverride)
         {
-            return MatchCharacterForTypefaceSpan(preferredFamily, weight, width, slant, codepoint, out familyOverride);
+            return MatchCharacterForTypefaceSpan(preferredFamily, weight, width, slant, language, codepoint, out familyOverride);
         }
 
         var currentTypefaceStartIndex = 0;
@@ -215,6 +216,7 @@ public partial class SkiaSvgAssetLoader : Model.ISvgAssetLoader, Model.ISvgImage
         var preferredSlant = _skiaModel.ToSKFontStyleSlant(preferredTypeface?.FontSlant ?? ShimSkiaSharp.SKFontStyleSlant.Upright);
         var preferredFamily = GetExplicitFamilyName(preferredTypeface) ??
                               (preferredTypeface is null ? null : preferredFont.Typeface?.FamilyName);
+        var language = paintPreferredTypeface.FontLanguage;
 
         var candidates = new List<(SkiaSharp.SKTypeface Typeface, ShimSkiaSharp.SKTypeface? ReturnTypeface)>();
         void AddCandidate(SkiaSharp.SKTypeface? candidate, ShimSkiaSharp.SKTypeface? returnTypeface = null)
@@ -254,8 +256,8 @@ public partial class SkiaSvgAssetLoader : Model.ISvgAssetLoader, Model.ISvgImage
 
         for (var i = 0; i < codepoints.Count; i++)
         {
-            AddCandidate(MatchCharacter(preferredFamily, preferredWeight, preferredWidth, preferredSlant, codepoints[i]));
-            AddCandidate(MatchCharacter(null, preferredWeight, preferredWidth, preferredSlant, codepoints[i]));
+            AddCandidate(MatchCharacter(preferredFamily, preferredWeight, preferredWidth, preferredSlant, language, codepoints[i]));
+            AddCandidate(MatchCharacter(null, preferredWeight, preferredWidth, preferredSlant, language, codepoints[i]));
         }
 
         for (var i = 0; i < candidates.Count; i++)
@@ -548,10 +550,12 @@ public partial class SkiaSvgAssetLoader : Model.ISvgAssetLoader, Model.ISvgImage
         SkiaSharp.SKFontStyleWeight weight,
         SkiaSharp.SKFontStyleWidth width,
         SkiaSharp.SKFontStyleSlant slant,
+        string? language,
         int codepoint)
     {
         var normalizedFamily = familyName;
-        var key = new MatchCharacterKey(normalizedFamily, weight, width, slant, codepoint);
+        var normalizedLanguage = NormalizeFontLanguage(language);
+        var key = new MatchCharacterKey(normalizedFamily, weight, width, slant, normalizedLanguage, codepoint);
         if (_matchCharacterCache.TryGetValue(key, out var cached))
         {
             if (cached is not null && cached.Handle != IntPtr.Zero)
@@ -565,10 +569,10 @@ public partial class SkiaSvgAssetLoader : Model.ISvgAssetLoader, Model.ISvgImage
         var typeface = TryMatchCharacterFromCustomProviders(normalizedFamily, weight, width, slant, codepoint);
         if (typeface is null)
         {
-            if (!SharedTypefaceCache.TryGetMatchedCharacter(normalizedFamily, weight, width, slant, codepoint, out typeface))
+            if (!SharedTypefaceCache.TryGetMatchedCharacter(normalizedFamily, weight, width, slant, normalizedLanguage, codepoint, out typeface))
             {
-                typeface = MatchPlatformCharacter(normalizedFamily, weight, width, slant, codepoint);
-                SharedTypefaceCache.AddMatchedCharacter(normalizedFamily, weight, width, slant, codepoint, typeface);
+                typeface = MatchPlatformCharacter(normalizedFamily, weight, width, slant, normalizedLanguage, codepoint);
+                SharedTypefaceCache.AddMatchedCharacter(normalizedFamily, weight, width, slant, normalizedLanguage, codepoint, typeface);
             }
         }
 
@@ -587,6 +591,7 @@ public partial class SkiaSvgAssetLoader : Model.ISvgAssetLoader, Model.ISvgImage
         SkiaSharp.SKFontStyleWeight weight,
         SkiaSharp.SKFontStyleWidth width,
         SkiaSharp.SKFontStyleSlant slant,
+        string? language,
         int codepoint,
         out string? familyOverride)
     {
@@ -598,7 +603,7 @@ public partial class SkiaSvgAssetLoader : Model.ISvgAssetLoader, Model.ISvgImage
             return typeface;
         }
 
-        return MatchCharacter(familyName, weight, width, slant, codepoint);
+        return MatchCharacter(familyName, weight, width, slant, language, codepoint);
     }
 
     private static string? GetExplicitFamilyName(ShimSkiaSharp.SKTypeface? typeface)
@@ -606,14 +611,23 @@ public partial class SkiaSvgAssetLoader : Model.ISvgAssetLoader, Model.ISvgImage
         return SkiaModel.HasExplicitTypeface(typeface) ? typeface!.FamilyName : null;
     }
 
+    private static string? NormalizeFontLanguage(string? language)
+    {
+        return string.IsNullOrWhiteSpace(language)
+            ? null
+            : language.Trim().Replace('_', '-');
+    }
+
     private static SkiaSharp.SKTypeface? MatchPlatformCharacter(
         string? normalizedFamily,
         SkiaSharp.SKFontStyleWeight weight,
         SkiaSharp.SKFontStyleWidth width,
         SkiaSharp.SKFontStyleSlant slant,
+        string? language,
         int codepoint)
     {
         var typeface = default(SkiaSharp.SKTypeface);
+        var bcp47 = language is null ? null : new[] { language };
 
         if (normalizedFamily is not null)
         {
@@ -641,7 +655,7 @@ public partial class SkiaSvgAssetLoader : Model.ISvgAssetLoader, Model.ISvgImage
                     weight,
                     width,
                     slant,
-                    null,
+                    bcp47,
                     codepoint);
 
                 if (typeface is { })
@@ -680,7 +694,7 @@ public partial class SkiaSvgAssetLoader : Model.ISvgAssetLoader, Model.ISvgImage
                         weight,
                         width,
                         slant,
-                        null,
+                        bcp47,
                         codepoint);
 
                     if (typeface is { })
@@ -693,7 +707,13 @@ public partial class SkiaSvgAssetLoader : Model.ISvgAssetLoader, Model.ISvgImage
 
         if (typeface is null)
         {
-            typeface = SkiaSharp.SKFontManager.Default.MatchCharacter(codepoint);
+            typeface = SkiaSharp.SKFontManager.Default.MatchCharacter(
+                null,
+                weight,
+                width,
+                slant,
+                bcp47,
+                codepoint);
         }
 
         if (typeface is { } && typeface.Handle == IntPtr.Zero)

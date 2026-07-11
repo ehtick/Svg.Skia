@@ -20,6 +20,7 @@ public sealed class SKPaint : ICloneable, IDeepCloneable<SKPaint>
     private bool _lcdRenderText;
     private bool _subpixelText;
     private SKTextEncoding _textEncoding = SKTextEncoding.Utf8;
+    private string? _fontLanguage;
     private string? _fontFeatureSettings;
     private string? _fontKerning;
     private string? _fontVariantLigatures;
@@ -259,6 +260,21 @@ public sealed class SKPaint : ICloneable, IDeepCloneable<SKPaint>
         }
     }
 
+    public string? FontLanguage
+    {
+        get => _fontLanguage;
+        set
+        {
+            if (string.Equals(_fontLanguage, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _fontLanguage = value;
+            _version++;
+        }
+    }
+
     public string? FontKerning
     {
         get => _fontKerning;
@@ -425,6 +441,7 @@ public sealed class SKPaint : ICloneable, IDeepCloneable<SKPaint>
         clone.LcdRenderText = LcdRenderText;
         clone.SubpixelText = SubpixelText;
         clone.TextEncoding = TextEncoding;
+        clone.FontLanguage = FontLanguage;
         clone.FontFeatureSettings = FontFeatureSettings;
         clone.FontKerning = FontKerning;
         clone.FontVariantLigatures = FontVariantLigatures;

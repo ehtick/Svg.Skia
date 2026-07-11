@@ -188,6 +188,10 @@ public class CloneCoreTests
         Assert.Equal(original.LcdRenderText, clone.LcdRenderText);
         Assert.Equal(original.SubpixelText, clone.SubpixelText);
         Assert.Equal(original.TextEncoding, clone.TextEncoding);
+        Assert.Equal(original.FontLanguage, clone.FontLanguage);
+        Assert.Equal(original.FontFeatureSettings, clone.FontFeatureSettings);
+        Assert.Equal(original.FontKerning, clone.FontKerning);
+        Assert.Equal(original.FontVariantLigatures, clone.FontVariantLigatures);
         Assert.Equal(original.Color, clone.Color);
         Assert.Equal(original.BlendMode, clone.BlendMode);
         Assert.Equal(original.FilterQuality, clone.FilterQuality);

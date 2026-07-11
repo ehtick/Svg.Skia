@@ -1045,6 +1045,7 @@ internal static class PaintingService
         skPaint.LcdRenderText = true;
         skPaint.SubpixelText = true;
         skPaint.TextEncoding = SKTextEncoding.Utf16;
+        skPaint.FontLanguage = ResolveInheritedTextLanguage(svgText);
         if (HasInheritedTextOpenTypePaintProperty(svgText))
         {
             skPaint.FontFeatureSettings = ResolveInheritedTextPaintProperty(svgText, "font-feature-settings", "normal");
@@ -1088,6 +1089,50 @@ internal static class PaintingService
         {
             skPaint.Typeface = resolvedTypeface;
         }
+    }
+
+    private static string? ResolveInheritedTextLanguage(SvgElement element)
+    {
+        for (SvgElement? current = element; current is not null; current = current.Parent)
+        {
+            if (TryGetTextLanguage(current, out var language))
+            {
+                return language.Trim().Replace('_', '-');
+            }
+        }
+
+        return null;
+    }
+
+    private static bool TryGetTextLanguage(SvgElement element, out string language)
+    {
+        if (element.TryGetAttribute("xml:lang", out language) && !string.IsNullOrWhiteSpace(language) ||
+            element.TryGetAttribute("lang", out language) && !string.IsNullOrWhiteSpace(language))
+        {
+            return true;
+        }
+
+        if (element.CustomAttributes.TryGetValue(
+                "http://www.w3.org/XML/1998/namespace:lang",
+                out var namespacedLanguage) &&
+            !string.IsNullOrWhiteSpace(namespacedLanguage))
+        {
+            language = namespacedLanguage ?? string.Empty;
+            return true;
+        }
+
+        foreach (var attribute in element.CustomAttributes)
+        {
+            if (attribute.Key.EndsWith(":lang", StringComparison.Ordinal) &&
+                !string.IsNullOrWhiteSpace(attribute.Value))
+            {
+                language = attribute.Value;
+                return true;
+            }
+        }
+
+        language = string.Empty;
+        return false;
     }
 
     private static bool HasInheritedTextOpenTypePaintProperty(SvgElement element)

@@ -134,12 +134,14 @@ internal static class SharedTypefaceCache
             SkiaSharp.SKFontStyleWeight weight,
             SkiaSharp.SKFontStyleWidth width,
             SkiaSharp.SKFontStyleSlant slant,
+            string? language,
             int codepoint)
         {
             FamilyName = familyName;
             Weight = weight;
             Width = width;
             Slant = slant;
+            Language = language;
             Codepoint = codepoint;
         }
 
@@ -147,6 +149,7 @@ internal static class SharedTypefaceCache
         public SkiaSharp.SKFontStyleWeight Weight { get; }
         public SkiaSharp.SKFontStyleWidth Width { get; }
         public SkiaSharp.SKFontStyleSlant Slant { get; }
+        public string? Language { get; }
         public int Codepoint { get; }
 
         public bool Equals(MatchCharacterKey other)
@@ -155,6 +158,7 @@ internal static class SharedTypefaceCache
                    Weight == other.Weight &&
                    Width == other.Width &&
                    Slant == other.Slant &&
+                   string.Equals(Language, other.Language, StringComparison.Ordinal) &&
                    Codepoint == other.Codepoint;
         }
 
@@ -171,6 +175,7 @@ internal static class SharedTypefaceCache
                 hash = (hash * 397) ^ (int)Weight;
                 hash = (hash * 397) ^ (int)Width;
                 hash = (hash * 397) ^ (int)Slant;
+                hash = (hash * 397) ^ (Language?.GetHashCode() ?? 0);
                 hash = (hash * 397) ^ Codepoint;
                 return hash;
             }
@@ -236,10 +241,11 @@ internal static class SharedTypefaceCache
         SkiaSharp.SKFontStyleWeight weight,
         SkiaSharp.SKFontStyleWidth width,
         SkiaSharp.SKFontStyleSlant slant,
+        string? language,
         int codepoint,
         out SkiaSharp.SKTypeface? typeface)
     {
-        var key = new MatchCharacterKey(familyName, weight, width, slant, codepoint);
+        var key = new MatchCharacterKey(familyName, weight, width, slant, language, codepoint);
         return TryGetValidTypeface(s_matchCharacterCache, key, out typeface);
     }
 
@@ -248,10 +254,11 @@ internal static class SharedTypefaceCache
         SkiaSharp.SKFontStyleWeight weight,
         SkiaSharp.SKFontStyleWidth width,
         SkiaSharp.SKFontStyleSlant slant,
+        string? language,
         int codepoint,
         SkiaSharp.SKTypeface? typeface)
     {
-        var key = new MatchCharacterKey(familyName, weight, width, slant, codepoint);
+        var key = new MatchCharacterKey(familyName, weight, width, slant, language, codepoint);
         s_matchCharacterCache.TryAdd(key, new TypefaceCacheEntry(GetValidTypefaceOrNull(typeface)));
         TrimCacheIfNeeded(s_matchCharacterCache, MatchCharacterCacheLimit);
     }

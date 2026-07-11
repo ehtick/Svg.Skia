@@ -403,18 +403,44 @@ namespace Svg.Skia
             {
                 for (SvgElement? current = svgTextBase; current is not null; current = current.Parent)
                 {
-                    if (current.TryGetAttribute("xml:lang", out var xmlLang) && !string.IsNullOrWhiteSpace(xmlLang))
+                    if (TryGetLanguage(current, out var language))
                     {
-                        return NormalizeLanguageTag(xmlLang);
-                    }
-
-                    if (current.TryGetAttribute("lang", out var lang) && !string.IsNullOrWhiteSpace(lang))
-                    {
-                        return NormalizeLanguageTag(lang);
+                        return NormalizeLanguageTag(language);
                     }
                 }
 
                 return null;
+            }
+
+            private static bool TryGetLanguage(SvgElement element, out string language)
+            {
+                if (element.TryGetAttribute("xml:lang", out language) && !string.IsNullOrWhiteSpace(language) ||
+                    element.TryGetAttribute("lang", out language) && !string.IsNullOrWhiteSpace(language))
+                {
+                    return true;
+                }
+
+                if (element.CustomAttributes.TryGetValue(
+                        "http://www.w3.org/XML/1998/namespace:lang",
+                        out var namespacedLanguage) &&
+                    !string.IsNullOrWhiteSpace(namespacedLanguage))
+                {
+                    language = namespacedLanguage ?? string.Empty;
+                    return true;
+                }
+
+                foreach (var attribute in element.CustomAttributes)
+                {
+                    if (attribute.Key.EndsWith(":lang", StringComparison.Ordinal) &&
+                        !string.IsNullOrWhiteSpace(attribute.Value))
+                    {
+                        language = attribute.Value;
+                        return true;
+                    }
+                }
+
+                language = string.Empty;
+                return false;
             }
 
             private static string NormalizeLanguageTag(string value)

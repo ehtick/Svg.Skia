@@ -17,12 +17,14 @@ public partial class SkiaSvgAssetLoader
             SkiaSharp.SKFontStyleWeight weight,
             SkiaSharp.SKFontStyleWidth width,
             SkiaSharp.SKFontStyleSlant slant,
+            string? language,
             int codepoint)
         {
             FamilyName = familyName;
             Weight = weight;
             Width = width;
             Slant = slant;
+            Language = language;
             Codepoint = codepoint;
         }
 
@@ -30,6 +32,7 @@ public partial class SkiaSvgAssetLoader
         public SkiaSharp.SKFontStyleWeight Weight { get; }
         public SkiaSharp.SKFontStyleWidth Width { get; }
         public SkiaSharp.SKFontStyleSlant Slant { get; }
+        public string? Language { get; }
         public int Codepoint { get; }
 
         public bool Equals(MatchCharacterKey other)
@@ -38,6 +41,7 @@ public partial class SkiaSvgAssetLoader
                 && Weight == other.Weight
                 && Width == other.Width
                 && Slant == other.Slant
+                && string.Equals(Language, other.Language, System.StringComparison.Ordinal)
                 && Codepoint == other.Codepoint;
         }
 
@@ -54,6 +58,7 @@ public partial class SkiaSvgAssetLoader
                 hash = (hash * 397) ^ (int)Weight;
                 hash = (hash * 397) ^ (int)Width;
                 hash = (hash * 397) ^ (int)Slant;
+                hash = (hash * 397) ^ (Language?.GetHashCode() ?? 0);
                 hash = (hash * 397) ^ Codepoint;
                 return hash;
             }
@@ -122,6 +127,7 @@ public partial class SkiaSvgAssetLoader
             FontFeatureSettings = paint.FontFeatureSettings;
             FontKerning = paint.FontKerning;
             FontVariantLigatures = paint.FontVariantLigatures;
+            FontLanguage = paint.FontLanguage;
 
             if (paint.Typeface is { } typeface)
             {
@@ -149,6 +155,7 @@ public partial class SkiaSvgAssetLoader
         private string? FontFeatureSettings { get; }
         private string? FontKerning { get; }
         private string? FontVariantLigatures { get; }
+        private string? FontLanguage { get; }
         private bool HasTypeface { get; }
         private string? TypefaceFamilyName { get; }
         private ShimSkiaSharp.SKFontStyleWeight TypefaceWeight { get; }
@@ -165,6 +172,7 @@ public partial class SkiaSvgAssetLoader
                 && string.Equals(FontFeatureSettings, other.FontFeatureSettings, StringComparison.Ordinal)
                 && string.Equals(FontKerning, other.FontKerning, StringComparison.Ordinal)
                 && string.Equals(FontVariantLigatures, other.FontVariantLigatures, StringComparison.Ordinal)
+                && string.Equals(FontLanguage, other.FontLanguage, StringComparison.Ordinal)
                 && HasTypeface == other.HasTypeface
                 && string.Equals(TypefaceFamilyName, other.TypefaceFamilyName, StringComparison.Ordinal)
                 && TypefaceWeight == other.TypefaceWeight
@@ -189,6 +197,7 @@ public partial class SkiaSvgAssetLoader
                 hash = (hash * 397) ^ (FontFeatureSettings is null ? 0 : StringComparer.Ordinal.GetHashCode(FontFeatureSettings));
                 hash = (hash * 397) ^ (FontKerning is null ? 0 : StringComparer.Ordinal.GetHashCode(FontKerning));
                 hash = (hash * 397) ^ (FontVariantLigatures is null ? 0 : StringComparer.Ordinal.GetHashCode(FontVariantLigatures));
+                hash = (hash * 397) ^ (FontLanguage is null ? 0 : StringComparer.Ordinal.GetHashCode(FontLanguage));
                 hash = (hash * 397) ^ (HasTypeface ? 1 : 0);
                 hash = (hash * 397) ^ (TypefaceFamilyName is null ? 0 : StringComparer.Ordinal.GetHashCode(TypefaceFamilyName));
                 hash = (hash * 397) ^ (int)TypefaceWeight;
