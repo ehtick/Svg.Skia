@@ -26,10 +26,23 @@ class Program
     {
         GC.KeepAlive(typeof(SvgImageExtension).Assembly);
         GC.KeepAlive(typeof(Avalonia.Svg.Skia.Svg).Assembly);
+#if AVALONIA_PROGPU
+        return AppBuilder.Configure<App>()
+            .UseSilkNet()
+            .UseSkia()
+            .With(new Avalonia.Rendering.Composition.CompositionOptions
+            {
+                UseRegionDirtyRectClipping = false
+            })
+            .UseHarfBuzz()
+            .WithInterFont()
+            .LogToTrace();
+#else
         return AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .With(new X11PlatformOptions { })
             .LogToTrace()
             .UseSkia();
+#endif
     }
 }

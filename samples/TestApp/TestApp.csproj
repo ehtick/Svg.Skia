@@ -10,6 +10,7 @@
 
   <PropertyGroup>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <DefineConstants Condition="'$(UseAvaloniaProGpu)' == 'true'">$(DefineConstants);AVALONIA_PROGPU</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
@@ -18,7 +19,7 @@
   <Import Project="..\..\build\ReferenceAssemblies.props" />
   <Import Project="..\..\build\Avalonia.props" />
   <Import Project="..\..\build\Avalonia.Themes.Fluent.props" />
-  <Import Project="..\..\build\Avalonia.Diagnostics.props" />
+  <Import Project="..\..\build\Avalonia.Diagnostics.props" Condition="'$(UseAvaloniaProGpu)' != 'true'" />
   <Import Project="..\..\build\Avalonia.Desktop.props" />
   <Import Project="..\..\build\SkiaSharp.props" />
   <Import Project="..\..\build\SkiaSharp.Native.props" />
@@ -31,4 +32,20 @@
     <ProjectReference Include="..\..\src\Svg.Skia\Svg.Skia.csproj" />
     <ProjectReference Include="..\..\src\Svg.Skia.JavaScript\Svg.Skia.JavaScript.csproj" />
   </ItemGroup>
+
+  <Target Name="ValidateAvaloniaProGpuSourceLane"
+          BeforeTargets="PrepareForBuild"
+          Condition="'$(UseAvaloniaProGpu)' == 'true'">
+    <Error Condition="!Exists('$(AvaloniaSourceRoot)\src\Skia\Avalonia.SkiaShim\Avalonia.SkiaShim.csproj')"
+           Text="Avalonia ProGPU sources were not found at '$(AvaloniaSourceRoot)'. Set AvaloniaSourceRoot to the Avalonia feature/progpu checkout." />
+  </Target>
+
+  <Import Project="$(AvaloniaSourceRoot)\build\BuildTargets.targets"
+          Condition="'$(UseAvaloniaProGpu)' == 'true'" />
+  <PropertyGroup Condition="'$(UseAvaloniaProGpu)' == 'true'">
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <IncludeAvaloniaGenerators>true</IncludeAvaloniaGenerators>
+  </PropertyGroup>
+  <Import Project="$(AvaloniaSourceRoot)\build\SourceGenerators.props"
+          Condition="'$(UseAvaloniaProGpu)' == 'true'" />
 </Project>

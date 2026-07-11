@@ -17,8 +17,12 @@
   <PropertyGroup>
     <AnalysisLevel>latest</AnalysisLevel>
     <LangVersion>latest</LangVersion>
+    <UseAvaloniaProGpu Condition="'$(UseAvaloniaProGpu)' == ''">false</UseAvaloniaProGpu>
+    <AvaloniaSourceRoot Condition="'$(AvaloniaSourceRoot)' == ''">$(MSBuildThisFileDirectory)..\Avalonia</AvaloniaSourceRoot>
+    <UseProGpuSkiaSharpShim Condition="'$(UseProGpuSkiaSharpShim)' == '' and '$(UseAvaloniaProGpu)' == 'true'">true</UseProGpuSkiaSharpShim>
     <UseProGpuSkiaSharpShim Condition="'$(UseProGpuSkiaSharpShim)' == ''">false</UseProGpuSkiaSharpShim>
     <ProGpuSourceRoot Condition="'$(ProGpuSourceRoot)' == ''">$(MSBuildThisFileDirectory)..\ProGPU</ProGpuSourceRoot>
+    <UseSkiaSharpShim Condition="'$(UseSkiaSharpShim)' == '' and '$(UseAvaloniaProGpu)' == 'true'">true</UseSkiaSharpShim>
   </PropertyGroup>
   <PropertyGroup>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>

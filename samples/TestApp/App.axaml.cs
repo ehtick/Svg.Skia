@@ -3,7 +3,9 @@ using System.Diagnostics;
 using System.IO;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+#if !AVALONIA_PROGPU
 using Avalonia.Diagnostics;
+#endif
 using Avalonia.Markup.Xaml;
 using TestApp.Services;
 using TestApp.ViewModels;
@@ -80,7 +82,7 @@ public class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
-#if DEBUG
+#if DEBUG && !AVALONIA_PROGPU
         this.AttachDevTools();
 #endif
     }
