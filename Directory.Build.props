@@ -17,6 +17,8 @@
   <PropertyGroup>
     <AnalysisLevel>latest</AnalysisLevel>
     <LangVersion>latest</LangVersion>
+    <UseProGpuSkiaSharpShim Condition="'$(UseProGpuSkiaSharpShim)' == ''">false</UseProGpuSkiaSharpShim>
+    <ProGpuSourceRoot Condition="'$(ProGpuSourceRoot)' == ''">$(MSBuildThisFileDirectory)..\ProGPU</ProGpuSourceRoot>
   </PropertyGroup>
   <PropertyGroup>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
